@@ -1,0 +1,38 @@
+{
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DZJSON_BUILD_SHARED=OFF",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "CMAKE_CXX_COMPILER",
+          "value": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/x64/bin/cl.exe",
+          "type": "FILEPATH"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DZJSON_BUILD_SHARED=OFF -DCMAKE_CXX_FLAGS=\"/O2\"",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "CMAKE_CXX_COMPILER",
+          "value": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/x64/bin/cl.exe",
+          "type": "FILEPATH"
+        }
+      ]
+    }
+  ]
+}
