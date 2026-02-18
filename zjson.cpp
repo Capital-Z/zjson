@@ -1,3 +1,6 @@
+#if defined(ZJSON_BUILD_SHARED)
+ #define ZJSON_EXP_IMP __declspec(dllexport)
+#endif
 #include "zjson.h"
 #include "jansson.h"
 

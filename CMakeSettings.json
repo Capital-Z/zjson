@@ -13,7 +13,7 @@
 			"variables": [
 				{
 					"name": "JANSSON_ROOT",
-					"value": "C:/SourceExternal/JSON/jansson-2.15.0/out/install/x64-Debug",
+					"value": "",
 					"type": "PATH"
 				}
 			]
@@ -31,7 +31,7 @@
 			"variables": [
 				{
 					"name": "JANSSON_ROOT",
-					"value": "C:/SourceExternal/JSON/jansson-2.15.0/out/install/x64-Release",
+					"value": "",
 					"type": "PATH"
 				}
 			]

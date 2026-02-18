@@ -6,11 +6,13 @@
 #include <utility>
 
 #if !defined(ZJSON_BUILD_SHARED)
- #define ZJSON_EXP_IMP
  #pragma message("ZJSON: Building static library.")
+ #define ZJSON_EXP_IMP
 #else
- #define ZJSON_EXP_IMP __declspec(dllexport)
  #pragma message("ZJSON: Building shared library.")
+ #if !defined(ZJSON_EXP_IMP)
+  #define ZJSON_EXP_IMP __declspec(dllimport)
+ #endif
 #endif
 
 struct json_t;
