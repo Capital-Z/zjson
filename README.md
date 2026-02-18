@@ -18,8 +18,8 @@ The difference with the various C++ JSON alternatives is:
 See the demo file for more examples.
 
 # Building
-Simle CMake build. Set JANSSON_ROOT if CMAKE cannot find Jansson on its own.
-Use ZJSON_BUILD_SHARED option to build a shared library, otherwise a static library will be built.
+Simple CMake project. Set JANSSON_ROOT if CMAKE cannot find Jansson on its own.
+Set ZJSON_BUILD_SHARED option to build a shared library, otherwise a static library will be built.
 If using shared Jansson lib, make sure it is available for your executable.
 
 Any problems, questions or suggestions are welcome.
