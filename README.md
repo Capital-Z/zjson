@@ -8,17 +8,12 @@ The difference with the various C++ JSON alternatives is:
 - simple source (1 header and 1 cpp), easy to understand and modify/adjust if you need it.
 
 # Usage
-json::Object jObj{{"field", "value"}, {"field2", 123}};
-
-jObj["field3"] = json::Array{1, 2, std::string{}};
-
-ioStream << jObj;
-
-ioStream >> jObj;
-
-std::string str = json::jsonToString(jObj);
-
-auto jObj2 = json::strToObject(str);
+    json::Object jObj{{"field", "value"}, {"field2", 123}};
+    jObj["field3"] = json::Array{1, 2, std::string{}};
+    ioStream << jObj;
+    ioStream >> jObj;
+    std::string str = json::jsonToString(jObj);
+    auto jObj2 = json::strToObject(str);
 
 See the demo file for more examples.
 
