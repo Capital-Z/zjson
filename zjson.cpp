@@ -12,9 +12,9 @@ namespace json //using namespace will not work for the free functions
 
 	Value::Value(bool v) : m_val(json_boolean(v)) {}
 
-	Value::Value(unsigned long long v) : m_val(json_integer(v)) {}
+	Value::Value(uint64_t v) : m_val(json_integer(v)) {}
 
-	Value::Value(long long v) : m_val(json_integer(v)) {}
+	Value::Value(int64_t v) : m_val(json_integer(v)) {}
 
 	Value::Value(unsigned long v) : m_val(json_integer(v)) {}
 
@@ -122,24 +122,24 @@ namespace json //using namespace will not work for the free functions
 			return false;
 	}
 
-	long long Value::asInt() const
+	int64_t Value::asInt() const
 	{
 		if (!json_is_integer(m_val))
 			onCastErr("integer");
 		return json_integer_value(m_val);
 	}
 
-	long long Value::asIntNum() const
+	int64_t Value::asIntNum() const
 	{
 		if (json_is_integer(m_val))
 			return json_integer_value(m_val);
 		else if (json_is_real(m_val))
-			return long long(json_real_value(m_val) + 0.5);
+			return int64_t(json_real_value(m_val) + 0.5);
 		else
 			return onCastErr("integer_num"), 0;
 	}
 
-	long long Value::asIntSafe(long long def /*= 0ll*/) const
+	int64_t Value::asIntSafe(int64_t def /*= 0ll*/) const
 	{
 		if (!json_is_integer(m_val))
 			return def;

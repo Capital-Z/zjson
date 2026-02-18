@@ -5,8 +5,12 @@
 #include <type_traits>
 #include <utility>
 
-#if !defined(BASIC_EXP_IMP)
-#define ZJSON_EXP_IMP
+#if !defined(ZJSON_BUILD_SHARED)
+ #define ZJSON_EXP_IMP
+ #pragma message("ZJSON: Building static library.")
+#else
+ #define ZJSON_EXP_IMP __declspec(dllexport)
+ #pragma message("ZJSON: Building shared library.")
 #endif
 
 struct json_t;
@@ -31,8 +35,8 @@ namespace json
 		//Lazy copy! CoW (CopyOnWrite) implemented and called in Array and Object modifiers (Value does not have modifiers that preserve json_t value)
 		Value(const Value& rhs);
 		Value(bool v);
-		Value(unsigned long long v);
-		Value(long long v);
+		Value(uint64_t v);
+		Value(int64_t v);
 		Value(unsigned long v);
 		Value(long v);
 		Value(unsigned v);
@@ -71,7 +75,7 @@ namespace json
 		bool asBoolSafe() const;
 		int64_t asInt() const;
 		int64_t asIntNum() const;//can be int or float(rounded)
-		int64_t asIntSafe(long long def = 0ll) const;
+		int64_t asIntSafe(int64_t def = 0ll) const;
 		template<typename IntT> IntT asIntT() const;
 		template<typename UIntT> UIntT asUIntT() const;
 		template<typename IntT> IntT asIntTSafe(IntT def) const;
@@ -161,9 +165,8 @@ namespace json
 	}
 
 // PointerLike_ concept requires C++20. Provide a best-effort fallback for older standards.
-// Use feature-test macros and _MSVC_LANG to detect C++20 support.
-#define ZJSON_CPP20 (defined(__cpp_concepts) || (defined(__cplusplus) && __cplusplus >= 202002L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L))
-#if ZJSON_CPP20
+#if defined(__cpp_concepts) || (defined(__cplusplus) && __cplusplus >= 202002L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)
+	#define ZJSON_CPP20
 	template <typename T>
 	concept PointerLike_ = requires(T v) {
 		{ *v };       // Can be dereferenced
@@ -171,7 +174,7 @@ namespace json
 	} || std::is_pointer_v<T>;
 #else
 // Pre-C++20 fallback: detect pointer-like types using SFINAE (works in C++14).
-// It recognizes raw pointers and types that provide both operator* and operator-> (e.g. smart pointers).
+	#undef ZJSON_CPP20
 	namespace detail {
 		template<typename, typename = void>
 		struct has_deref : std::false_type {};
@@ -209,7 +212,7 @@ namespace json
 			Array ret;
 			for (const auto& el : cont)
 			{
-#if ZJSON_CPP20
+#if defined(ZJSON_CPP20)
 				using ElementType = std::remove_cvref_t<decltype(el)>;
 				if constexpr (PointerLike_<ElementType>)
 #else
@@ -224,23 +227,13 @@ namespace json
 			return ret;
 		}
 		//create vector "like" container with elements constructible from primitive type. E.g.:
-		// using StrVec=std::vector<std::string>; auto strVec{ jArr.toStdArray<StrVec>(&json::Value::asString) };
+		// using StrVec=std::vector<std::string>; StrVec strVec = jArr.toStdArray<StrVec>(&json::Value::asString)
 		template<class StdCont, typename ValueMemFn> StdCont toStdArray(ValueMemFn valueMemFn) const
 		{
 			StdCont ret;
 			ret.reserve(size());
 			for (size_t i = 0, iEnd = size(); i != iEnd; ++i)
-				ret.push_back(std::invoke(valueMemFn, (*this)[i]));
-			return ret;
-		}
-		//for set "like" container with elements constructible from primitive type. Use:
-		// using IntSet=std::set<int64_t>; auto iset{ jArr.toStdArray<IntSet>(&json::Value::asInt) };
-		template<class StdCont, typename ValueMemFn> StdCont toStdSet(ValueMemFn valueMemFn) const //container elements constructible from primitive type
-		{
-			StdCont ret;
-			ret.reserve(size());
-			for (size_t i = 0, iEnd = size(); i != iEnd; ++i)
-				ret.insert(std::invoke(valueMemFn, (*this)[i]));
+				ret.emplace_back(((*this)[i].*valueMemFn)());
 			return ret;
 		}
 		//for container with elements directly constructible from json Value
@@ -249,7 +242,7 @@ namespace json
 			StdCont ret;
 			ret.reserve(size());
 			for (size_t i = 0, iEnd = size(); i != iEnd; ++i)
-				ret.push_back((*this)[i]);
+				ret.emplace_back((*this)[i]);
 			return ret;
 		}
 		//for container with elements directly constructible from json Object
@@ -258,7 +251,16 @@ namespace json
 			StdCont ret;
 			ret.reserve(size());
 			for (size_t i = 0, iEnd = size(); i != iEnd; ++i)
-				ret.push_back((*this)[i].asObject());
+				ret.emplace_back((*this)[i].asObject());
+			return ret;
+		}
+		//for set "like" container with elements constructible from primitive type. Use:
+		// using IntSet=std::set<int64_t>; IntSet iset = jArr.toStdSet<IntSet>(&json::Value::asInt)
+		template<class StdCont, typename ValueMemFn> StdCont toStdSet(ValueMemFn valueMemFn) const //container elements constructible from primitive type
+		{
+			StdCont ret;
+			for (size_t i = 0, iEnd = size(); i != iEnd; ++i)
+				ret.emplace(((*this)[i].*valueMemFn)());
 			return ret;
 		}
 
@@ -304,7 +306,7 @@ namespace json
 		public:
 			using iterator_category = std::random_access_iterator_tag;
 			using value_type = Value;
-			using difference_type = long long;
+			using difference_type = int64_t;
 			using pointer = const value_type*;
 			using reference = const value_type&;
 
@@ -344,7 +346,7 @@ namespace json
 		public:
 			using iterator_category = std::random_access_iterator_tag;
 			using value_type = ValueAssign;
-			using difference_type = long long;
+			using difference_type = int64_t;
 			using pointer = value_type*;
 			using reference = value_type&;
 
@@ -438,7 +440,7 @@ namespace json
 		public:
 			using iterator_category = std::forward_iterator_tag;
 			using value_type = std::pair<const char*, const Value>;
-			using difference_type = long long;
+			using difference_type = int64_t;
 			using pointer = const value_type*;
 			using reference = const value_type&;
 
@@ -513,3 +515,13 @@ namespace json
 	template<class ObjOrArr>
 	inline void stringToJson(const std::string& strJ, ObjOrArr& j) { stringToJson(strJ.c_str(), strJ.size(), j); }
 }//namespace json
+
+/*Might be possible to use as header only, but that means adding
+* jansson header(s) to the public interface (slow compile & include/link deps).
+* To do so, each definition in the cpp must be prefixed with ZJSON_INLINE
+* and clients can define ZJSON_INLINE before including this header and uncomment:
+#if !defined(ZJSON_BUILD_SHARED) && defined(ZJSON_INLINE)
+#define ZJSON_INLINE inline
+#include "zjson.cpp"
+#endif
+*/
