@@ -26,7 +26,7 @@ namespace json
 
 	class Array;
 	class Object;
-	//reference counted json value. Not thread safe!
+	//reference counted json value. Not thread safe! Use deepCopy() to pass between threads.
 	class ZJSON_EXP_IMP Value
 	{
 	public:
