@@ -1,5 +1,8 @@
 #if defined(ZJSON_BUILD_SHARED)
+ #pragma message("ZJSON: Building shared library.")
  #define ZJSON_EXP_IMP __declspec(dllexport)
+#else
+ #pragma message("ZJSON: Building static library.")
 #endif
 #include "zjson.h"
 #include "jansson.h"

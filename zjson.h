@@ -6,10 +6,8 @@
 #include <utility>
 
 #if !defined(ZJSON_BUILD_SHARED)
- #pragma message("ZJSON: Building static library.")
  #define ZJSON_EXP_IMP
 #else
- #pragma message("ZJSON: Building shared library.")
  #if !defined(ZJSON_EXP_IMP)
   #define ZJSON_EXP_IMP __declspec(dllimport)
  #endif
