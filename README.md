@@ -4,7 +4,7 @@ C++ JSON API, wrapper of Jansson C library
 The difference with the various C++ JSON alternatives is:
 - while it defaults to c++20 it also supports old-ish C++ standards (tested with C++14).
 - it is a wrapper of the C library Jansson, which is mature and widely used (very permissive MIT license).
-- used for quite some time in production code, so it is stable and well tested.
+- used for quite some time in production code on Windows, so it is stable and well tested.
 - simple source (1 header and 1 cpp), easy to understand and modify/adjust if you need it.
 
 # Usage
