@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <utility>
 
+struct json_t;
+
 #if !defined(ZJSON_BUILD_SHARED)
  #define ZJSON_EXP_IMP
 #else
@@ -12,8 +14,28 @@
   #define ZJSON_EXP_IMP __declspec(dllimport)
  #endif
 #endif
-
-struct json_t;
+// PointerLike_ concept requires C++20. Provide a best-effort fallback for older standards.
+#if defined(__cpp_concepts) || (defined(__cplusplus) && __cplusplus >= 202002L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)
+#define ZJSON_CPP20
+template <typename T>
+concept PointerLike_ = requires(T v) {
+	{ *v };       // Can be dereferenced
+	{ v.operator->() }; // Has arrow operator (or is a raw pointer)
+} || std::is_pointer_v<T>;
+#else
+// Pre-C++20 fallback: detect pointer-like types using SFINAE (works in C++14).
+#undef ZJSON_CPP20
+namespace detail {
+	template<typename, typename = void>
+	struct has_deref : std::false_type {};
+	template<typename T>
+	struct has_deref<T, decltype(void(*std::declval<T&>()))> : std::true_type {};
+	template<typename, typename = void>
+	struct has_arrow : std::false_type {};
+	template<typename T>
+	struct has_arrow<T, decltype(void(std::declval<T&>().operator->()))> : std::true_type {};
+}
+#endif
 
 namespace json
 {
@@ -26,13 +48,14 @@ namespace json
 
 	class Array;
 	class Object;
-	//reference counted json value. Not thread safe! Use deepCopy() to pass between threads.
+	// Reference counted json value. Not thread safe! Use deepCopy() to pass between threads.
+	// It still behaves like value type (i.e. it does not act like ponter/ref types). Lazy copy
+	// CoW(CopyOnWrite) implemented and called in Array and Object modifiers (Value does not have modifiers that preserve json_t value).
 	class ZJSON_EXP_IMP Value
 	{
 	public:
 		Value() : m_val(nullptr) {}
 		Value(Value&& rhs) : m_val(rhs.m_val) { rhs.m_val = nullptr; }
-		//Lazy copy! CoW (CopyOnWrite) implemented and called in Array and Object modifiers (Value does not have modifiers that preserve json_t value)
 		Value(const Value& rhs);
 		Value(bool v);
 		Value(uint64_t v);
@@ -47,6 +70,10 @@ namespace json
 		Value(double v);
 		Value(const char* v);
 		Value(const std::string& v);
+#if defined(ZJSON_CPP20) //support for the new char8_t is through plain char* which assumed to be UTF8 anyway
+		inline Value(const char8_t* v) : Value((const char*)v) {}
+		inline Value(const std::u8string& v) : Value((const char*)v.c_str()) {}
+#endif
 		Value(json_t* v);//Internal. Should only be used for borrowed references.
 		~Value();
 
@@ -57,8 +84,8 @@ namespace json
 		Value deepCopy() const;
 		void swap(Value& rhs) { std::swap(m_val, rhs.m_val); }
 
-		bool isEmpty() const { return !m_val; }
-		bool isEmptyValue() const;
+		bool isEmpty() const { return !m_val; }//true if no value (e.g. Object{}["missing"] returns a Value that isEmpty())
+		bool isEmptyValue() const;//true if isEmpty() or has json value that is empty (e.g. empty() array or object, "" string, false bool, 0 int or float)
 		bool isNull() const;
 		bool isBool() const;
 		bool isInt() const;
@@ -103,6 +130,12 @@ namespace json
 		const char* c_strSafe(const char* def = "") const;
 		std::string asString() const { return c_str(); }
 		std::string asStringSafe(std::string def = {}) const;
+#if defined(ZJSON_CPP20) //support for char8_t is through plain char* which is assumed to be UTF8 anyway
+		inline const char8_t* c_u8str() const { return (const char8_t*)c_str(); }
+		inline const char8_t* c_u8strSafe(const char8_t* defV = u8"") const { return (const char8_t*)c_strSafe((const char*)defV); }
+		inline std::u8string asU8String() const { return c_u8str(); }
+		inline std::u8string asU8StringSafe(const std::u8string defV = {}) const { return c_u8strSafe(defV.c_str()); }
+#endif
 		//don't return ref, e.g.: for (auto jSec : jObj["sects"].asArray()) - "sects" value is optimized away in Release instantly!
 		const Array asArray() const;
 		const Object asObject() const;
@@ -118,7 +151,7 @@ namespace json
 		json_t* m_val;
 
 		std::string type2String() const;
-		void cow();//read as CopyOnWrite (no domestic animals abused here!)
+		void cow();//read as CopyOnWrite
 
 	private:
 		void onCastErr(const std::string& toType) const
@@ -164,30 +197,7 @@ namespace json
 		return UIntT(ret);
 	}
 
-// PointerLike_ concept requires C++20. Provide a best-effort fallback for older standards.
-#if defined(__cpp_concepts) || (defined(__cplusplus) && __cplusplus >= 202002L) || (defined(_MSVC_LANG) && _MSVC_LANG >= 202002L)
-	#define ZJSON_CPP20
-	template <typename T>
-	concept PointerLike_ = requires(T v) {
-		{ *v };       // Can be dereferenced
-		{ v.operator->() }; // Has arrow operator (or is a raw pointer)
-	} || std::is_pointer_v<T>;
-#else
-// Pre-C++20 fallback: detect pointer-like types using SFINAE (works in C++14).
-	#undef ZJSON_CPP20
-	namespace detail {
-		template<typename, typename = void>
-		struct has_deref : std::false_type {};
-		template<typename T>
-		struct has_deref<T, decltype(void(*std::declval<T&>()))> : std::true_type {};
-		template<typename, typename = void>
-		struct has_arrow : std::false_type {};
-		template<typename T>
-		struct has_arrow<T, decltype(void(std::declval<T&>().operator->()))> : std::true_type {};
-	}
-#endif
-
-	//No memeber variables in this class! reinterpret_cast in Value::asArray
+	//No member variables in this class! reinterpret_cast in Value::asArray
 	class ZJSON_EXP_IMP Array : public Value
 	{
 	public:
